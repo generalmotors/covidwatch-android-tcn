@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
+import org.covidwatch.android.GlobalConstants
 import org.covidwatch.android.R
 import org.covidwatch.android.databinding.FragmentTestQuestionsBinding
 import org.covidwatch.android.domain.TestedRepository
@@ -46,6 +47,7 @@ class TestQuestionsFragment : Fragment() {
             findNavController().navigate(R.id.testConfirmationFragment)
         }
 
+        binding.footerQuote.setText("")
         testQuestionsViewModel.testDate.observe(viewLifecycleOwner, Observer {
             val checkedIconId = if (it.isChecked) R.drawable.ic_check_true else 0
 //            binding.dateButton.setCompoundDrawablesWithIntrinsicBounds(0, 0, checkedIconId, 0)
@@ -66,12 +68,12 @@ class TestQuestionsFragment : Fragment() {
             findNavController().navigate(R.id.menuFragment)
         }
 
-        binding.dialMedicalButton.setOnClickListener{
-            val phone = getString(R.string.medical_dept_phone_number)
+        binding.dialCtButton.setOnClickListener{
+            val phone = GlobalConstants.MEDICAL_NUMBER
             val intent = Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phone, null))
             startActivity(intent)
         }
-        binding.dialMedicalButton.setOnTouchListener(ButtonUtils.ButtonTouchListener())
+        binding.dialCtButton.setOnTouchListener(ButtonUtils.ButtonTouchListener())
 
         binding.reportButton.setOnTouchListener {v, event ->
             when(event.action) {
@@ -88,7 +90,6 @@ class TestQuestionsFragment : Fragment() {
 
             false
         }
-
     }
 
     override fun onDestroyView() {

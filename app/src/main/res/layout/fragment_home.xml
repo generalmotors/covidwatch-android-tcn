@@ -28,28 +28,26 @@
 
             <TextView
                 android:id="@+id/home_title_1"
-                style="@style/main_page_header"
+                style="@style/ct_page_header"
                 android:fontFamily="@font/gm_global_sans_black"
                 android:paddingHorizontal="32dp"
-                android:text="@string/safe_at_work" />
+                android:text="@string/ct_name" />
 
             <TextView
                 android:id="@+id/contact_warning_banner"
                 style="@style/AlertBannerTop"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="59dp"
                 android:background="@color/orange_alert"
                 android:visibility="gone"
                 tools:text="You may have been in contact with COVID-19"
                 tools:visibility="visible" />
 
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="58dp" />
+            <LinearLayout
+                style="@style/ct_main_card_layout"
+                android:layout_height="wrap_content">
 
-            <LinearLayout style="@style/main_card_layout">
-
-                <View style="@style/common_divider_1" />
+                <View style="@style/ct_divider_1" />
 
                 <TextView
                     android:id="@+id/status_title"
@@ -67,7 +65,7 @@
                 <LinearLayout
                     android:id="@+id/warning_banner"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="122dp"
                     android:orientation="horizontal">
 
                     <ImageView
@@ -95,7 +93,7 @@
                             android:textColor="@color/yellowgreen"
                             android:textSize="26sp"
                             android:textStyle="bold"
-                            tools:text="@string/safe_text" />
+                            tools:text="@string/ct_name" />
 
                         <TextView
                             android:id="@+id/warning_desc"
@@ -103,7 +101,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:fontFamily="@font/arial"
-                            android:text="No people detected nearby"
+                            android:text="@string/no_device_detected"
                             android:textAppearance="@style/TextAppearance.AppCompat.Display1"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -111,6 +109,18 @@
                     </LinearLayout>
 
                 </LinearLayout>
+
+                <Button
+                    android:id="@+id/interaction_data_button"
+                    style="@style/ct_button"
+                    android:layout_width="236dp"
+                    android:layout_height="35dp"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="10dp"
+                    android:layout_marginBottom="5dp"
+                    android:fontFamily="@font/montserrat"
+                    android:text="@string/send_calibration_data"
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/info_banner"
@@ -128,7 +138,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
 
-                <View style="@style/common_divider_1" />
+                <View style="@style/ct_divider_1" />
 
 
                 <androidx.viewpager2.widget.ViewPager2
@@ -144,7 +154,7 @@
                     app:tabGravity="center"
                     app:tabIndicatorHeight="0dp" />
 
-                <View style="@style/common_divider_1" />
+                <View style="@style/ct_divider_1" />
 
             </LinearLayout>
 

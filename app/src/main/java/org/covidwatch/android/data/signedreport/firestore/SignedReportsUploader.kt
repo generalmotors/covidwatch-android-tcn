@@ -1,9 +1,9 @@
 package org.covidwatch.android.data.signedreport.firestore
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Base64
 import android.util.Log
-import org.covidwatch.android.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.collect
@@ -13,17 +13,22 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.covidwatch.android.BuildConfig
+import org.covidwatch.android.GlobalConstants
 import org.covidwatch.android.data.signedreport.SignedReport
 import org.covidwatch.android.data.signedreport.SignedReportDAO
-import org.covidwatch.android.service.ContactTracerService
+import org.covidwatch.android.model.ContactRegistration
+import org.covidwatch.android.service.ContactTracerStreams
 import org.json.JSONObject
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 
 class SignedReportsUploader(var context: Context,
-                            private val okHttpClient: OkHttpClient,
-                            private val signedReportDAO: SignedReportDAO
+    private val okHttpClient: OkHttpClient,
+    private val signedReportDAO: SignedReportDAO
 ) {
-
+    private val TAG = this::class.qualifiedName
     fun startUploading() {
         GlobalScope.launch(Dispatchers.IO) {
             signedReportDAO.all().collect {
@@ -99,14 +104,28 @@ class SignedReportsUploader(var context: Context,
         return Base64.encodeToString(input, Base64.NO_WRAP)
     }
 
+    @SuppressLint("SimpleDateFormat")
     @Throws(IOException::class, IllegalStateException::class)
     private fun uploadReport(json: String): Boolean {
         //post phone number to backend
         val currPhone = context.getSharedPreferences("org.covidwatch.android.PREFERENCE_FILE_KEY",
             Context.MODE_PRIVATE
         )?.getString("contact_number_full","No number saved")
-        val cts = currPhone?.let { ContactTracerService().registerPhoneNumber(it, false) }
+        val cal = Calendar.getInstance()
+        val currentTime = cal.time
+        val simpleDateFormat = SimpleDateFormat(GlobalConstants.API_DATE_PATTERN)
+        val formatted = simpleDateFormat.format(currentTime)
 
+        currPhone?.let { ContactTracerStreams().postContactInformation(ContactRegistration(currPhone,formatted,true))?.subscribe({
+            //Do something on complete
+            Log.i(TAG, "Posted phone number to server $currPhone...")
+             })
+        {
+            Log.e(TAG, it.message!!)
+            //Handle error
+        }!! }
+
+        //submit firebase report
         val apiUrl = BuildConfig.FIREBASE_CLOUD_FUNCTIONS_ENDPOINT
         val url = "$apiUrl/submitReport"
         val body = json.toRequestBody(contentType())
@@ -123,9 +142,5 @@ class SignedReportsUploader(var context: Context,
 
     private fun contentType(): MediaType {
         return "application/json; charset=utf-8".toMediaType()
-    }
-
-    companion object {
-        private const val TAG = "SignedReportsUploader"
     }
 }

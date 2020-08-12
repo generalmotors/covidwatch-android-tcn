@@ -13,14 +13,6 @@
         android:paddingHorizontal="3dp"
         android:paddingBottom="32dp">
 
-<!--        <ImageView-->
-<!--            android:layout_width="286dp"-->
-<!--            android:layout_height="40dp"-->
-<!--            android:layout_gravity="center"-->
-<!--            android:layout_marginHorizontal="4dp"-->
-<!--            android:layout_marginTop="4dp"-->
-<!--            android:baselineAlignBottom="false"-->
-<!--            app:srcCompat="@drawable/logo_placeholder" />-->
 
         <TextView
             android:layout_width="match_parent"
@@ -75,7 +67,7 @@
 
             <Button
                 android:id="@+id/grant_location_access_button"
-                style="@style/main_button"
+                style="@style/ct_button"
                 android:layout_width="match_parent"
                 android:layout_height="46dp"
                 android:layout_marginHorizontal="40dp"
@@ -93,14 +85,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:layout_marginBottom="-40dp"
+            android:layout_marginBottom="-60dp"
             android:fontFamily="@font/arial"
             android:text="@string/enter_contact_phone_number"
             android:textAlignment="center" />
 
         <EditText
             android:id="@+id/contact_phone_number2"
-            style="@style/main_regular_input"
+            style="@style/ct_regular_input"
             android:layout_width="match_parent"
             android:layout_height="56dip"
             android:layout_marginLeft="0dip"
@@ -127,7 +119,6 @@
         <Space
             android:layout_width="match_parent"
             android:layout_height="109dp" />
-
 
     </LinearLayout>
 

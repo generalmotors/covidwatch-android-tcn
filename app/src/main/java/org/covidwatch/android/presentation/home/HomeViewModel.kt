@@ -1,6 +1,9 @@
 package org.covidwatch.android.presentation.home
 
 import android.app.Application
+import android.os.Build
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.*
 import org.covidwatch.android.R
 import org.covidwatch.android.data.CovidWatchDatabase
@@ -8,9 +11,16 @@ import org.covidwatch.android.data.Interaction
 import org.covidwatch.android.data.TemporaryContactNumberDAO
 import org.covidwatch.android.data.signedreport.SignedReportsDownloader
 import org.covidwatch.android.domain.*
+import org.covidwatch.android.model.InteractionCalibration
+import org.covidwatch.android.service.ContactTracerStreams
+import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.koin.dsl.koinApplication
+import org.tcncoalition.tcnclient.TcnConstants
+import kotlin.coroutines.coroutineContext
+
 
 class HomeViewModel(
     private val userFlowRepository: UserFlowRepository,
@@ -21,6 +31,8 @@ class HomeViewModel(
     application: Application
 ) : AndroidViewModel(application), EnsureTcnIsStartedPresenter {
 
+    private val TAG = this::class.qualifiedName
+    private val disposables = CompositeDisposable()
     private val isUserTestedPositive: Boolean get() = testedRepository.isUserTestedPositive()
     private val _userTestedPositive = MutableLiveData<Unit>()
     val userTestedPositive: LiveData<Unit> get() = _userTestedPositive
@@ -59,13 +71,6 @@ class HomeViewModel(
         val intrDao = CovidWatchDatabase.getInstance(application).interactionDAO()
         intrcRepository = InteractionRepository(intrDao)
         nearbyInteractions = intrcRepository.nearbyInteractions
-       // nearbyInteractions = intrcRepository.nearbyInteractionsByTime
-        //countByInteractions = intrcRepository.countbyInteractionsByTime
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        hasPossiblyInteractedWithInfected.removeObserver(interactedWithInfectedObserver)
     }
 
     override fun showLocationPermissionBanner() {
@@ -90,6 +95,21 @@ class HomeViewModel(
             ensureTcnIsStarted()
         }
         _userFlow.value = userFlow
+    }
+
+    fun sendInteractionData(currentInteraction: Interaction) {
+        val distance = currentInteraction.distanceInFeet
+        val contactPhoneModel =
+            TcnConstants.PHONE_MODELS[currentInteraction.detectedPhoneModel].toString().toInt()
+        val phoneModel = TcnConstants.PHONE_MODELS[Build.MODEL].toString().toInt()
+        val interactionCalibration = InteractionCalibration(phoneModel, contactPhoneModel, distance)
+        disposables.add(
+            ContactTracerStreams().postCalibrationInteraction(interactionCalibration)
+                ?.subscribe({ Toast.makeText(this.getApplication(), "Calibration data sent!", Toast.LENGTH_SHORT).show() })
+                {
+                    Log.e(TAG, it.message!!)
+                }!!
+        )
     }
 
     fun onRefreshRequested() {
@@ -117,4 +137,11 @@ class HomeViewModel(
             ensureTcnIsStartedUseCase.execute(this@HomeViewModel)
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        hasPossiblyInteractedWithInfected.removeObserver(interactedWithInfectedObserver)
+        disposables.clear()
+    }
+
 }

@@ -1,65 +1,43 @@
 package org.covidwatch.android.service
 
-import android.util.Log
 import org.covidwatch.android.GlobalConstants
-import com.google.gson.Gson
-import okhttp3.MediaType
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
-import java.text.SimpleDateFormat
+import org.covidwatch.android.model.BeaconReport
+import org.covidwatch.android.model.ContactRegistration
+import org.covidwatch.android.model.InteractionCalibration
+import io.reactivex.Completable
+import io.reactivex.Single
+import okhttp3.ResponseBody
+import org.tcncoalition.tcnclient.TcnConstants
+import retrofit2.Retrofit
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
+import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.*
 
-class ContactTracerService {
 
-    @Throws(IOException::class, IllegalStateException::class)
-    fun registerPhoneNumber(phoneNumber: String, isPrimary: Boolean): Boolean {
-        val okHttpClient = OkHttpClient()
-
-        val cal = java.util.Calendar.getInstance()
-        val currentTime = cal.time
-
-        val simpleDateFormat = SimpleDateFormat(GlobalConstants.MEDICAL_API_DATE_PATTERN)
-        val formatted = simpleDateFormat.format(currentTime)
-
-        val phoneInfo: HashMap<String, Any> =
-            hashMapOf(
-                "phone_number" to phoneNumber,
-                "registration_time" to formatted,
-                "is_primary" to isPrimary.toString()
-            )
-
-        val gson = Gson()
-        val jsonPhoneInfo: String = gson.toJson(phoneInfo)
-        val requestPost = Request.Builder()
-            .url(GlobalConstants.MEDICAL_API_PHONE_REGISTRATION_URL)
-            .addHeader("ct_key", GlobalConstants.MEDICAL_API_CT_KEY)
-            .addHeader("Accept", "application/json")
-            .post(jsonPhoneInfo.toRequestBody(contentType()))
-            .build()
-
-        val thread = Thread(Runnable {
-            try {
-                okHttpClient.newCall(requestPost).execute().use { response ->
-                    response.isSuccessful
-                    Log.i(TAG, "Registered phone with number $phoneNumber as infected.")
-                }
-            } catch (e: Exception) {
-                println(e)
-            }
-        })
-        thread.start()
-
-        return false
-    }
-
-    private fun contentType(): MediaType {
-        return "application/json; charset=utf-8".toMediaType()
-    }
-
+interface ContactTracerService {
     companion object {
-        private const val TAG = "ContactTracerService"
-    }
 
+        private const val BASE_URL = TcnConstants.API_URL
+        private const val API_KEY = "ct_key: ${GlobalConstants.API_CT_KEY}"
+        val retrofit: Retrofit = Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+            .build()
+    }
+    @Headers(API_KEY)
+    @POST("interaction_calibration")
+    fun postCalibrationInteraction(@Body interactionCalibration: InteractionCalibration): Completable
+    @Headers(API_KEY)
+    @GET("beacon_report/{beaconId}")
+    fun getBeaconReport(@Path("beaconId") beaconId: String): Single<BeaconReport?>?
+    @Headers(API_KEY)
+    @POST("contact_registration")
+    fun postContactInformation(@Body contactRegistration: ContactRegistration) : Completable
+    @Headers(API_KEY)
+    @GET("phone_profile/{deviceId}")
+    fun getPhoneDistanceProfile(@Path("deviceId") deviceId: Int) : Single<ResponseBody>
+    @Headers(API_KEY)
+    @GET("phone_models")
+    fun getPhoneModels() : Single<ResponseBody>
 }

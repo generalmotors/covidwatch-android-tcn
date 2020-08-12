@@ -7,6 +7,7 @@ import org.covidwatch.android.GlobalConstants
 import org.covidwatch.android.data.signedreport.firestore.SignedReportsDownloadWorker
 import java.util.concurrent.TimeUnit
 
+
 private const val PERIODIC_REFRESH = "SignedReportsDownloadWorkerPeriodicRefresh"
 private const val ONE_TIME_REFRESH = "SignedReportsDownloadWorkerOneTimeRefresh"
 
@@ -29,6 +30,7 @@ class SignedReportsDownloader(private val workManager: WorkManager) {
         val downloadRequest = OneTimeWorkRequestBuilder<SignedReportsDownloadWorker>()
             .setConstraints(getRefreshConstraints())
             .build()
+
 
         workManager.enqueueUniqueWork(
             ONE_TIME_REFRESH,

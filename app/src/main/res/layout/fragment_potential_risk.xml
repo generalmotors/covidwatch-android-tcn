@@ -146,7 +146,7 @@
 
             <Button
                 android:id="@+id/risk_negative_button"
-                style="@style/main_button"
+                style="@style/ct_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="0dp"
@@ -160,7 +160,7 @@
 
             <Button
                 android:id="@+id/risk_positive_button"
-                style="@style/main_button"
+                style="@style/ct_button"
                 android:layout_marginHorizontal="0dp"
 
                 android:layout_width="match_parent"

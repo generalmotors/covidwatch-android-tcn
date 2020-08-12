@@ -28,32 +28,48 @@
 
             <TextView
                 android:id="@+id/home_title_1"
-                style="@style/main_page_header"
+                style="@style/ct_page_header"
                 android:fontFamily="@font/gm_global_sans_black"
                 android:paddingHorizontal="32dp"
-                android:text="@string/safe_at_work" />
+                android:text="@string/ct_name" />
 
             <LinearLayout
-                style="@style/main_card_layout"
+                style="@style/ct_main_card_layout"
                 android:layout_marginTop="64dp">
 
                 <TextView
                     android:id="@+id/home_desc_1"
-                    style="@style/regular_text"
+                    style="@style/ct_regular_text"
                     android:layout_marginTop="0dp"
                     android:fontFamily="@font/arial"
                     android:text="@string/call_tested_positive"
                     android:textSize="18sp" />
 
                 <Button
-                    android:id="@+id/dial_medical_button"
-                    style="@style/main_button"
+                    android:id="@+id/dial_ct_button"
+                    style="@style/ct_button"
                     android:fontFamily="@font/montserrat"
                     android:text="@string/dial_medical" />
 
+<!--                <TextView-->
+<!--                    android:id="@+id/home_desc_2"-->
+<!--                    style="@style/ct_regular_text"-->
+<!--                    android:layout_marginTop="28dp"-->
+<!--                    android:layout_marginBottom="-10dp"-->
+<!--                    android:fontFamily="@font/arial"-->
+<!--                    android:text="@string/enter_confirmation_num"-->
+<!--                    android:textSize="14sp" />-->
+
+<!--                <EditText-->
+<!--                    android:id="@+id/ct_confirmation_number"-->
+<!--                    style="@style/ct_regular_input"-->
+<!--                    android:layout_marginBottom="-40dp"-->
+<!--                    android:fontFamily="@font/montserrat"-->
+<!--                    android:inputType="number" />-->
+
                 <Button
                     android:id="@+id/report_button"
-                    style="@style/main_button_red"
+                    style="@style/ct_button_red"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginVertical="48dp"
@@ -65,7 +81,13 @@
 
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"/>
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/footer_quote"
+                    style="@style/footer_quote_style"
+                    android:text="@string/footer_quote_text" />
+            </RelativeLayout>
         </LinearLayout>
     </ScrollView>
 

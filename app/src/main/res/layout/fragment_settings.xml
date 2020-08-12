@@ -71,7 +71,7 @@
 
     <EditText
         android:id="@+id/contact_phone_number"
-        style="@style/main_regular_input"
+        style="@style/ct_regular_input"
         android:layout_width="match_parent"
         android:layout_height="56dip"
         android:layout_marginLeft="0dip"

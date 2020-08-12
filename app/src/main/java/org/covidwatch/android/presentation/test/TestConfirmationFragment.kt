@@ -40,6 +40,7 @@ class TestConfirmationFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         binding.footerQuote.text = ""
+
         binding.toolbar.menuButton.setOnClickListener {
             findNavController().navigate(R.id.menuFragment)
         }

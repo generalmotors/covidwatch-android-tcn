@@ -7,7 +7,7 @@ class BeaconData {
 
     public var deviceName: String? = null
 
-    public var uuid: ByteArray? = null
+    public var uuid: String? = null
 
     public var rssi: Int? = 0
 

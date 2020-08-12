@@ -6,7 +6,6 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
 import android.text.Editable
-import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
@@ -17,7 +16,6 @@ import org.covidwatch.android.R
 import org.covidwatch.android.domain.UserFlowRepository
 import org.covidwatch.android.presentation.util.formatContactNumber
 import org.covidwatch.android.presentation.util.validateContactNumber
-import org.covidwatch.android.service.ContactTracerService
 import kotlinx.android.synthetic.main.fragment_setup_bluetooth.*
 import org.koin.android.ext.android.inject
 import pub.devrel.easypermissions.AfterPermissionGranted
@@ -62,7 +60,6 @@ class SetupBluetoothFragment : Fragment(R.layout.fragment_setup_bluetooth),
             val formattedPhone = formatContactNumber(contact_phone_number2.text.toString())
 
             if (validateContactNumber(formattedPhone)) {
-
 
                 context?.getSharedPreferences("org.covidwatch.android.PREFERENCE_FILE_KEY",MODE_PRIVATE)?.edit()?.putString("contact_number_full",formattedPhone)?.apply()
                 contact_phone_number2.text = Editable.Factory.getInstance().newEditable(context?.getSharedPreferences("org.covidwatch.android.PREFERENCE_FILE_KEY",MODE_PRIVATE)?.getString("contact_number_full","No number saved"))
@@ -142,4 +139,5 @@ class SetupBluetoothFragment : Fragment(R.layout.fragment_setup_bluetooth),
             findNavController().popBackStack(R.id.homeFragment,false)
         }
     }
+
 }

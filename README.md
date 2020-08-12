@@ -12,7 +12,8 @@ This document is focused on the implementation of the Android version of the Con
 - Allows users to send contact data back to a centralized source if they tested positive for COVID-19
 - Proactively alerts a user if the user is in proximity to another user (both users must have the app running for detection)
 - Displays key statistics to the user regarding daily interactions
-- iBeacon support for iOS -> Android interactions
+- iBeacon support for iOS -> iPhone users would be issued with iBeacon and Android detects iPhone user using iBeacon
+- Device model-to-model distance calibration and profiling to augment distance detection and alerting. 
 
 ## Application Flow
 
@@ -24,7 +25,7 @@ This document is focused on the implementation of the Android version of the Con
 
 ## Setup
 
-Clone this repo from the `master` branch:
+Clone this repo from the `develop` branch:
 
 Open the project in Android Studio to install with the `app` configuration. 
 
@@ -40,6 +41,8 @@ git checkout 5fc89bee2e15433f55b4e2c8036f2ce13c23d2a3
 ```
 
 Once Firebase is configured, create and replace the `google-services.json` in the Android project with one from your instance. 
+
+Setup the backend API for iBeacon TCN Retrieval and to post user’s phone number
 
 Update the API URL in the following files to the url of your [Contact Tracing Services](https://github.com/generalmotors/contact-tracing-mobile-app-backend) instance.
 
@@ -62,7 +65,7 @@ When user reports COVID positive the phone number is posted to backend API and a
 
 What is the anonymous protocol for communication between phones? How does it work and who designed it?
 
-Covid Watch uses Temporary Contact Numbers, a decentralized, privacy-first contact tracing protocol developed by the [TCN Coalition](https://tcn-coalition.org/). This protocol is built to be extensible, with the goal of providing interoperability between contact tracing applications. You can read more about it on their [Github](https://github.com/TCNCoalition/TCN).
+Contact Tracing uses Temporary Contact Numbers, a decentralized, privacy-first contact tracing protocol developed by the [TCN Coalition](https://tcn-coalition.org/). This protocol is built to be extensible, with the goal of providing interoperability between contact tracing applications. You can read more about it on their [Github](https://github.com/TCNCoalition/TCN).
 
 ## Contributors
 

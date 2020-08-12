@@ -17,6 +17,12 @@ import kotlin.math.round
 
 object NotificationUtils {
 
+//    public const val ACTION_TOO_CLOSE_NOTIFICATION =
+//        "org.covidwatch.android.ACTION_TOO_CLOSE_NOTIFICATION"
+//
+//    public const val ACTION_DANGER_NOTIFICATION =
+//        "org.covidwatch.android.ACTION_DANGER_NOTIFICATION"
+
     private const val TOO_CLOSE_CHANNEL_ID = "too_close_notification_channel"
     private const val DANGER_CHANNEL_ID = "danger_notification_channel"
 
@@ -47,7 +53,7 @@ object NotificationUtils {
 
             val notificationChannelDanger = NotificationChannel(
                 DANGER_CHANNEL_ID,
-                "Danger",
+                "Covid Contact Warnings",
                 NotificationManager.IMPORTANCE_HIGH
             )
             notificationChannelDanger.enableLights(true)
@@ -69,7 +75,7 @@ object NotificationUtils {
         notifyManager.notify(NOTIFICATION_ID,notifyBuilder.build())
 
         val pm =  context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val wl: PowerManager.WakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "Safe:WakeForAlert")
+        val wl: PowerManager.WakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "GMSafe:WakeForAlert")
         wl.acquire(10000)
     }
 
@@ -79,7 +85,7 @@ object NotificationUtils {
         notifyManager.notify(NOTIFICATION_ID,notifyBuilder.build())
 
         val pm =  context.getSystemService(Context.POWER_SERVICE) as PowerManager
-        val wl: PowerManager.WakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "Safe:WakeForDanger")
+        val wl: PowerManager.WakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP, "GMSafe:WakeForDanger")
         wl.acquire(10000)
     }
 

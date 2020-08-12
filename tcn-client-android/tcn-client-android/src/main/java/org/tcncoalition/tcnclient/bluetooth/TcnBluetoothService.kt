@@ -73,8 +73,7 @@ class TcnBluetoothService : Service() {
 
         registerReceiver(
             bluetoothStateReceiver,
-            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
-            "permission.ALLOW_BROADCAST", null
+            IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         )
     }
 

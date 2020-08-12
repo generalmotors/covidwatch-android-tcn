@@ -1,12 +1,15 @@
 package org.covidwatch.android.data.signedreport.firestore
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Build
 import android.util.Base64
 import android.util.Log
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import cafe.cryptography.ed25519.Ed25519PublicKey
 import cafe.cryptography.ed25519.Ed25519Signature
+import org.covidwatch.android.GlobalConstants
 import com.google.android.gms.tasks.Continuation
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.Timestamp
@@ -17,12 +20,16 @@ import com.google.firebase.firestore.QuerySnapshot
 import org.covidwatch.android.R
 import org.covidwatch.android.data.CovidWatchDatabase
 import org.covidwatch.android.data.TemporaryContactNumberDAO
-import org.covidwatch.android.service.ContactTracerService
+import org.covidwatch.android.model.ContactRegistration
+import org.covidwatch.android.service.ContactTracerStreams
 import org.covidwatch.android.util.NotificationUtils
+import org.json.JSONObject
+import org.tcncoalition.tcnclient.TcnConstants
 import org.tcncoalition.tcnclient.crypto.KeyIndex
 import org.tcncoalition.tcnclient.crypto.MemoType
 import org.tcncoalition.tcnclient.crypto.Report
 import org.tcncoalition.tcnclient.crypto.SignedReport
+import java.text.SimpleDateFormat
 import java.util.*
 
 class SignedReportsDownloadWorker(var context: Context, workerParams: WorkerParameters) :
@@ -32,7 +39,13 @@ class SignedReportsDownloadWorker(var context: Context, workerParams: WorkerPara
 
     override fun doWork(): Result {
 
-        Log.i(TAG, "Downloading signed reports...")
+        Log.i(TAG, "Downloading signed reports and updating phone models...")
+
+        //update phone models info from server
+        updatePhoneModels()
+
+        //update device distance profiles from server
+        updateDeviceDistanceProfile()
 
         val now = Date()
 
@@ -102,11 +115,34 @@ class SignedReportsDownloadWorker(var context: Context, workerParams: WorkerPara
 
         Tasks.await(task)
 
-        Log.i(TAG, "Finish task")
+        Log.i(TAG, "Finished download task")
 
         return result
     }
 
+    @SuppressLint("CheckResult")
+    private fun updatePhoneModels() {
+        ContactTracerStreams().getPhoneModels()?.subscribe({
+            val responseData = it?.string()
+            TcnConstants.PHONE_MODELS = JSONObject(responseData!!)
+            Log.i(TAG, "Successfully updated phone models from server.")
+        }){
+            Log.i(TAG, it.message + " Failed to download phone models from server.")
+        }
+    }
+
+    @SuppressLint("CheckResult")
+    private fun updateDeviceDistanceProfile() {
+        val deviceId : Int = if (TcnConstants.PHONE_MODELS.has(Build.MODEL)) TcnConstants.PHONE_MODELS[Build.MODEL].toString().toInt() else 0
+        ContactTracerStreams().getPhoneDistanceProfile(deviceId)?.subscribe({
+            val responseData = it?.string()
+            GlobalConstants.deviceDistanceProfile = JSONObject(responseData!!)
+        }){
+            Log.e(TAG, it.message!! + " Failed download distance profile from server")
+        }
+    }
+
+    @SuppressLint("SimpleDateFormat")
     private fun markLocalTemporaryContactNumbers(
         documentChanges: List<DocumentChange>,
         wasPotentiallyInfectious: Boolean
@@ -191,7 +227,21 @@ class SignedReportsDownloadWorker(var context: Context, workerParams: WorkerPara
                 Context.MODE_PRIVATE
             )?.getString("contact_number_full","No number saved")
 
-            val cts = currPhone?.let { ContactTracerService().registerPhoneNumber(it, false) }
+            val cal = Calendar.getInstance()
+            val currentTime = cal.time
+            val simpleDateFormat = SimpleDateFormat(GlobalConstants.API_DATE_PATTERN)
+            val formatted = simpleDateFormat.format(currentTime)
+
+            currPhone?.let { ContactTracerStreams().postContactInformation(
+                ContactRegistration(currPhone,formatted,true)
+            )?.subscribe({
+                //Do something on complete
+                Log.i(TAG, "Posted phone number to server $currPhone...")
+            })
+            {
+                Log.e(TAG, it.message!!)
+                //Handle error
+            }!! }
             temporaryContactNumberDAO.markPotentialInfectiousNotifiedToMedical()
             NotificationUtils.sendNotificationDanger()
         }

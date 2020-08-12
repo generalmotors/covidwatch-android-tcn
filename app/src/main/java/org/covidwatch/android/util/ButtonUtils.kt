@@ -7,8 +7,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.View.OnTouchListener
 import android.widget.Toast
+import org.covidwatch.android.GlobalConstants
 import org.covidwatch.android.R
-import org.covidwatch.android.presentation.SettingsFragment
+import org.covidwatch.android.presentation.settings.SettingsFragment
 
 
 class ButtonUtils {
@@ -61,19 +62,16 @@ class ButtonUtils {
                     }
                     MotionEvent.ACTION_UP -> {
                         when (v.id) {
-                            2131362049 -> { // Launch Pre-check Webpage
-                                v.backgroundTintList = ColorStateList.valueOf(v.context.getColor(R.color.accentYellow))
-                                val browserIntent = Intent(Intent.ACTION_VIEW,Uri.parse("<TO_BE_PROVIDED>"))
-                                v.context.startActivity(browserIntent)
-                                v.invalidate()
-                            }
+
                             2131361878 -> { // Turn On Bluetooth
-                                SettingsFragment().ensureBluetoothIsOn()
+                                SettingsFragment()
+                                    .ensureBluetoothIsOn()
                                 v.backgroundTintList = ColorStateList.valueOf(v.context.getColor(R.color.maroon_shadow))
                                 v.invalidate()
                             }
                             2131361983 -> { // Grant Location Access
-                                SettingsFragment().ensureLocationPermissionIsGranted()
+                                SettingsFragment()
+                                    .ensureLocationPermissionIsGranted()
                                 v.backgroundTintList = ColorStateList.valueOf(v.context.getColor(R.color.maroon_shadow))
                                 v.invalidate()
                             }
@@ -85,10 +83,10 @@ class ButtonUtils {
                                 v.invalidate()
 
                             }
-                            2131361921 -> { // Dial Medical Department
+                            2131361921 -> { // Dial GM Medical
                                 v.backgroundTintList = ColorStateList.valueOf(v.context.getColor(R.color.accentYellow))
                                 v.invalidate()
-                                val phone = R.string.medical_dept_phone_number
+                                val phone = GlobalConstants.MEDICAL_NUMBER
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phone.toString(), null))
                                 v.context.startActivity(intent)
 

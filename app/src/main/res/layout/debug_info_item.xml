@@ -15,7 +15,7 @@
         android:text="MacId" />
 
     <View
-        style="@style/common_divider_1"
+        style="@style/ct_divider_1"
         android:layout_marginTop="4dp" />
 
 </LinearLayout>

@@ -3,9 +3,6 @@ package org.tcncoalition.tcnclient.bluetooth
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
 import android.os.ParcelUuid
@@ -19,11 +16,11 @@ import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.json.JSONException
 import org.json.JSONObject
 import org.tcncoalition.tcnclient.OkHttpRequest
 import org.tcncoalition.tcnclient.TcnConstants
 import java.io.IOException
+import java.lang.Double.parseDouble
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.*
@@ -32,8 +29,6 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 import kotlin.collections.set
-
-import kotlin.math.roundToInt
 
 class TcnBluetoothManager(
     private val context: Context,
@@ -44,12 +39,12 @@ class TcnBluetoothManager(
 
     private var bluetoothGattServer: BluetoothGattServer? = null
     private val TAG = ScanCallback::class.java.simpleName
-
     private var isStarted: Boolean = false
     private var generatedTcn = ByteArray(0)
     private var tcnAdvertisingQueue = ArrayList<ByteArray>()
     private var inRangeBleAddressToTcnMap = mutableMapOf<String, ByteArray>()
     private var estimatedDistanceToRemoteDeviceAddressMap = mutableMapOf<String, Double>()
+    private var deviceModelCodeMap = mutableMapOf<String, Int>()
     private var beaconIDToTcnMap = mutableMapOf<String, ByteArray>()
 
     private var handler = Handler()
@@ -59,9 +54,8 @@ class TcnBluetoothManager(
 
     private var beaconAPIInvoked = false
 
-    
-
     fun start() {
+
         if (isStarted) return
         isStarted = true
 
@@ -75,6 +69,8 @@ class TcnBluetoothManager(
         changeOwnTcn() // This starts advertising also
         runAdvertiseNextTcnTimer()
     }
+
+
 
     fun stop() {
         if (!isStarted) return
@@ -93,6 +89,7 @@ class TcnBluetoothManager(
         tcnAdvertisingQueue.clear()
         inRangeBleAddressToTcnMap.clear()
         estimatedDistanceToRemoteDeviceAddressMap.clear()
+        deviceModelCodeMap.clear()
 
         executor?.shutdown()
         executor = null
@@ -172,30 +169,29 @@ class TcnBluetoothManager(
                 setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
 
-                               //setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
+                //setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
 
-                               // Report delay plays an important role in keeping track of the devices nearby:
-                               // If a batch scan result doesn't include devices from the previous result,
-                               // then we consider those devices out of range.
-                               // Important: Using a large duration value (greater than 60 sec) won't get us scan
-                               // results on old OSes
-                               setReportDelay(TimeUnit.SECONDS.toMillis(3))
-                               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                   setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
-                                   setLegacy(true)
-                               }
+                // Report delay plays an important role in keeping track of the devices nearby:
+                // If a batch scan result doesn't include devices from the previous result,
+                // then we consider those devices out of range.
+                // Important: Using a large duration value (greater than 60 sec) won't get us scan
+                // results on old OSes
+                setReportDelay(TimeUnit.SECONDS.toMillis(3))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    setPhy(ScanSettings.PHY_LE_ALL_SUPPORTED)
+                    setLegacy(true)
+                }
 
 
             }.build()
 
             val beaconScanFilters: MutableList<ScanFilter> = java.util.ArrayList()
             beaconScanFilters.add(ScanFilter.Builder().setServiceUuid(ParcelUuid(TcnConstants.UUID_SERVICE)).build())
-            beaconScanFilters.add(ScanFilterUtils.getScanFilter())
-            //beaconScanFilters.add(ScanFilterUtils.getScanFilter(TcnConstants.BEACON_UUID_SERVICE,64578,48807))
+            beaconScanFilters.add(ScanFilterUtils.getScanFilter(TcnConstants.BEACON_UUID_SERVICE,64578,48807))
 
-           //scanner.startScan(scanCallback)
+            //scanner.startScan(scanCallback)
             scanner.startScan(beaconScanFilters, scanSettings, scanCallback)
-           //scanner.startScan(scanFilters, scanSettings, scanCallback)
+            //scanner.startScan(scanFilters, scanSettings, scanCallback)
             Log.i(TAG, "Started scan")
         } catch (exception: Exception) {
             Log.e(TAG, "Start scan failed: $exception")
@@ -252,77 +248,120 @@ class TcnBluetoothManager(
                 val scanRecord = it.scanRecord ?: return@for_each
 
                 val tcnServiceData = scanRecord.serviceData[
-                    ParcelUuid(TcnConstants.UUID_SERVICE)]
+                        ParcelUuid(TcnConstants.UUID_SERVICE)]
 
 
-                val hintIsAndroid = (tcnServiceData != null)
-                var estimatedDistanceMeters: Double
-                var txPower: Int = 0
+
+                var hintIsAndroid : Boolean = true
+                val estimatedDistanceFeet: Double
+                //zero default for beacons
+                var deviceModelCode : Int = 0
+                var txPower : Int
                 var isBeacon: Boolean = false
-                var tcn: ByteArray? = null
+                var tcn: ByteArray?
 
-                if(!hintIsAndroid ){ //optimize the
-                    var beaconData = getBeaconData(it)
-                    if(beaconData != null) {
-                        isBeacon = true
-
-                        // txPower = scanRecord.txPowerLevel //beaconData.txPower!!
-                        txPower = beaconData.txPower!!
-                        //tcn = beaconData.uuid!!
-                        val beaconID = beaconData?.deviceName
-                        // find the base64
-                        if (tcnAdvertisingQueue?.size <= 0) {
-                            return
-                        }
-                        tcn = beaconIDToTcnMap.get(beaconID)
-                        if (tcn == null) {
-                            val jsonStr = beaconID?.let { it1 -> getBeaconTCNID(it1) }
-                        }
-
-                    //check again if the tcn is retrieved in the thread call
-                        tcn = beaconIDToTcnMap.get(beaconID)
-                        if (tcn == null) {
-                                return
-                         }
-
-                        val uuid: UUID = ConversionUtils.bytesToUuid(beaconData.uuid!!)
-                        Log.d(TAG, "onBatchScanResults Found beacon: UUID: ${uuid} DeviceName: ${scanRecord!!.deviceName} Rssi: ${it.rssi} Tx: ${it.txPower}  " + it.toString())
-
-                    } else {
-                        txPower = scanRecord.txPowerLevel
+                val beaconData = getBeaconData(it)
+                if(beaconData != null) {
+                    isBeacon = true
+                    hintIsAndroid = false
+                    deviceModelCode = when(beaconData.uuid) {
+                        TcnConstants.BEACON_UUID_SERVICE.toString() -> 10
+                        else -> 0
+                    }
+                    //txPower = beaconData.txPower!!
+                    val beaconID = beaconData?.deviceName
+                    // find the base64
+                    if (tcnAdvertisingQueue?.size <= 0) {
+                        return
+                    }
+                    tcn = beaconIDToTcnMap.get(beaconID)
+                    if (tcn == null) {
+                        val jsonStr = beaconID?.let { it1 -> getBeaconTCNID(it1) }
                     }
 
+
+                    //val tfirst = Base64.encode(tcnAdvertisingQueue.first(),Base64.NO_WRAP)
+                    //val tcnBase = Base64.decode("TyFNJGlhbRrNu+s9sTnEXA",Base64.NO_WRAP)
+                    //check again if the tcn is retrieved in the thread call
+                    tcn = beaconIDToTcnMap[beaconID]
+                    if (tcn == null) {
+                        return
+                    }
+
+                    txPower = beaconData.txPower!!
+
+                    //tcn = (beaconData?.deviceName?.toByteArray((Charset.defaultCharset())))
+
+                    val uuid = beaconData.uuid
+                    Log.d(TAG, "onBatchScanResults Found beacon: UUID: $uuid DeviceName: ${scanRecord!!.deviceName} Rssi: ${it.rssi} Tx: ${it.txPower}  " + it.toString())
+
+                } else {
+                    try {
+                        deviceModelCode = scanRecord.manufacturerSpecificData.keyAt(0)
+
+                        if(deviceModelCode == TcnConstants.IOS_DEFAULT_MANUFACTURING_ID) {
+                            var deviceName =  scanRecord.deviceName // get the phone model id from device name
+                            if (deviceName != null ){
+                                try {
+                                    val num = parseDouble(deviceName)
+                                    deviceModelCode = deviceName.toInt()
+                                   // Log.d(TAG, "iPhone device Found!")
+                                } catch (e: NumberFormatException) {
+                                    return
+                                }
+                            } else {
+                                return
+                            }
+                        }
+                    } catch (e : Exception){
+                        Log.e(TAG, "No manufactoring data found for device")
+                    }
+
+                    tcn = scanRecord.manufacturerSpecificData.valueAt(0)
+
+                    if(tcn != null ) {
+                        if (tcn.size < TcnConstants.TEMPORARY_CONTACT_NUMBER_LENGTH) return@for_each
+                        tcn = tcn.sliceArray(0 until TcnConstants.TEMPORARY_CONTACT_NUMBER_LENGTH)
+                    }
+
+                    txPower = it.txPower
                 }
                 // Update estimated distance
-                 estimatedDistanceMeters = getEstimatedDistanceMeters(
+                estimatedDistanceFeet = getEstimatedDistanceFeet(
                     it.rssi,
                     getMeasuredRSSIAtOneMeter(txPower, hintIsAndroid)
                 )
                 estimatedDistanceToRemoteDeviceAddressMap[it.device.address] =
-                    estimatedDistanceMeters
+                    estimatedDistanceFeet
+                deviceModelCodeMap[it.device.address] = deviceModelCode
 
-                if(!isBeacon) {
+                if(!isBeacon && tcnServiceData != null) {
+                    // iOS may still broadcast tcn in servicedata form. For Android this has been moved to manufactoringdata with device model.
                     tcnServiceData ?: return@for_each
                     if (tcnServiceData.size < TcnConstants.TEMPORARY_CONTACT_NUMBER_LENGTH) return@for_each
-                     tcn =
+                    tcn =
                         tcnServiceData.sliceArray(0 until TcnConstants.TEMPORARY_CONTACT_NUMBER_LENGTH)
 
-                    val uuid: UUID = ConversionUtils.bytesToUuid(tcn)
-                    Log.i(TAG, "TCN Log Phone UUID: ${uuid}")
-
                 }
-                Log.i(
-                    TAG,
-                    "onBatchScanResults Did find TCN (iBeacon Found)=${Base64.encodeToString(
-                        tcn,
-                        Base64.URL_SAFE
-                    )} from device=${it.device.address}\" at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[it.device.address]}"
-                )
-                tcn?.let { it1 ->
-                    tcnCallback.onTcnFound(
-                        it1,
-                        estimatedDistanceToRemoteDeviceAddressMap[it.device.address]
+                try {
+                    Log.i(
+                        TAG,
+                        "onBatchScanResults Did find TCN=${Base64.encodeToString(
+                            tcn,
+                            Base64.URL_SAFE
+                        )} from device=${it.device.address}\" at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[it.device.address]} with device model code: ${deviceModelCodeMap[it.device.address]}"
                     )
+                }catch (e : Exception){
+                    //tcn could be invalid, revisit
+                    return
+                }
+                tcn?.let { it1 ->
+                    deviceModelCodeMap[it.device.address]?.let { it2 ->
+                        tcnCallback.onTcnFound(
+                            it1,
+                            estimatedDistanceToRemoteDeviceAddressMap[it.device.address], it2
+                        )
+                    }
                 }
             }
 
@@ -340,7 +379,7 @@ class TcnBluetoothManager(
             }
             addressesToRemove.forEach {
                 val tcn = inRangeBleAddressToTcnMap[it]
-                Log.i(TAG, "onBatchScanResults isRangleBLE found TCN for ${it} =${Base64.encodeToString(tcn, Base64.URL_SAFE)}")
+                Log.i(TAG, "onBatchScanResults isRangeBLE found TCN for ${it} =${Base64.encodeToString(tcn, Base64.URL_SAFE)}")
                 dequeueFromAdvertising(tcn)
                 inRangeBleAddressToTcnMap.remove(it)
             }
@@ -353,11 +392,16 @@ class TcnBluetoothManager(
                     "onBatchScanResults Did find TCN (end of isRangeBLE)=${Base64.encodeToString(
                         it.value,
                         Base64.URL_SAFE
-                    )} from device=${it.key} at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[it.key]}"
+                    )} from device=${it.key} at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[it.key]} with device model code: ${deviceModelCodeMap[it.key]}"
                 )
-                tcnCallback.onTcnFound(it.value, estimatedDistanceToRemoteDeviceAddressMap[it.key])
+                deviceModelCodeMap[it.key]?.let { it1 ->
+                    tcnCallback.onTcnFound(it.value, estimatedDistanceToRemoteDeviceAddressMap[it.key],
+                        it1
+                    )
+                }
             }
         }
+
 
         override fun onScanResult(callbackType: Int, scanResult: ScanResult?) {
             super.onScanResult(callbackType, scanResult)
@@ -366,8 +410,14 @@ class TcnBluetoothManager(
             Log.d(TAG, "onScanResults - In the range of beacon: ${scanResult?.scanRecord!!.deviceName} " + scanResult.toString())
             super.onScanResult(callbackType, scanResult)
 
+
             // get Scan Record byte array (Be warned, this can be null)
-            if (scanResult?.getScanRecord() != null) {
+            if (scanResult.scanRecord != null) {
+                var mfgData = scanResult.scanRecord?.manufacturerSpecificData?.keyAt(0)
+                var tcnData = scanResult.scanRecord?.manufacturerSpecificData?.get(mfgData!!).toString()
+
+                Log.d("MFG DATA", mfgData.toString()+", "+tcnData)
+
                 /*
                 if(scanResult.scanRecord!!.serviceUuids.contains(ParcelUuid(UUID.fromString("0000C019-0000-1000-8000-00805F9B34FB")))){
                     Log.d(TAG, "onScanResults - TCN Device Found: ${scanResult?.scanRecord!!.deviceName} " + scanResult.toString())
@@ -418,34 +468,61 @@ class TcnBluetoothManager(
             }
         }
     }
+/*
+    fun getBeaconTCN() {
+         val okHttpClient = OkHttpClient
+        val apiUrl = ""
+        val url = "$apiUrl/submitReport"
+        val returnString = "";
 
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        return okHttpClient.newCall(request).execute().use { response ->
+            response.isSuccessful
+        }
+    }
+    fun GETRequest(url: String, callback: Callback): Call {
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        val call = okHttpClient.newCall(request)
+        call.enqueue(callback)
+        return call
+    }
+
+ */
 
     fun getBeaconTCNID(beaconID: String) {
 
         var client = OkHttpClient()
         var request= OkHttpRequest(client)
-        val url = TcnConstants.API_BEACON_TCN_RETRIEVAL_URL + beaconID
+        val url =  TcnConstants.API_URL + "beacon_report/" + beaconID
 
         request.GET(url, object: Callback {
             override fun onResponse(call: Call, response: Response) {
                 val responseData = response.body?.string()
 
-                    try {
-                        var json = JSONObject(responseData)
+                try {
+                    var json = JSONObject(responseData)
+                    //println("SUCCESS - " + json)
+                    // println("TCN " + json.get("tcn_base64"))
 
-                        beaconAPIInvoked = true
-                        var tcnBase64 = json.get("tcn_base64").toString()
-                        val tcnBase = Base64.decode(tcnBase64,Base64.NO_WRAP)
-                        beaconIDToTcnMap.put(beaconID,tcnBase)
-                    } catch (e: JSONException) {
-                        //ignore excpetion
-                        //e.printStackTrace()
+                    beaconAPIInvoked = true
+                    var tcnBase64 = json.get("tcn_base64").toString()
+                    val tcnBase = Base64.decode(tcnBase64,Base64.NO_WRAP)
+                    beaconIDToTcnMap.put(beaconID,tcnBase)
+                } catch (e: Exception) {
+                    //ignore excpetion
+                    //e.printStackTrace()
 
-                    }
+                }
             }
 
             override fun onFailure(call: Call, e: IOException) {
-                println("Activity Failure.")
+                Log.d(TAG, "Failed to retrieve TCN for beacon with id $beaconID")
             }
         })
     }
@@ -457,8 +534,10 @@ class TcnBluetoothManager(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun getBeaconData(scanResult: ScanResult?): BeaconData? {
         // get Scan Record byte array (Be warned, this can be null)
+
         if (scanResult?.getScanRecord() != null) {
 
             val scanRecord: ByteArray? = scanResult.scanRecord?.bytes
@@ -483,8 +562,8 @@ class TcnBluetoothManager(
                     val uuid: UUID = ConversionUtils.bytesToUuid(uuidBytes)
                     var beaconData = BeaconData()
                     Log.d(TAG, "onScanResults Found beacon: UUID: ${uuid} ${scanResult.device} DeviceName: ${scanResult.scanRecord!!.deviceName} Rssi: ${scanResult.rssi} Tx: ${scanResult.txPower}  " + scanResult.toString())
-                    beaconData.uuid = uuidBytes
-                   
+                    beaconData.uuid = uuid.toString()
+
                     beaconData.rssi = scanResult.rssi
 
                     val structures: List<ADStructure> =
@@ -532,7 +611,7 @@ class TcnBluetoothManager(
                     return beaconData
 
                 }
-                }
+            }
         }
         return null
     }
@@ -565,14 +644,15 @@ class TcnBluetoothManager(
             val data = AdvertiseData.Builder()
                 .setIncludeDeviceName(false)
                 .addServiceUuid(ParcelUuid(TcnConstants.UUID_SERVICE))
-                .addServiceData(
-                    ParcelUuid(TcnConstants.UUID_SERVICE),
-                    // Attach the first 4 bytes of our TCN to work around the problem of iOS
-                    // devices writing a new TCN to us whenever we rotate the TCN (every 20 sec).
-                    // iOS devices use the last 4 bytes to identify the Android devices and write
-                    // only once a TCN to them.
-                    tcnAdvertisingQueue.first()+generatedTcn.sliceArray(0..3)
-                )
+                .addManufacturerData(TcnConstants.PHONE_MODELS[Build.MODEL].toString().toInt(), tcnAdvertisingQueue.first()+generatedTcn.sliceArray(0..3))
+//                .addServiceData(
+//                    ParcelUuid(TcnConstants.UUID_SERVICE),
+                // Attach the first 4 bytes of our TCN to work around the problem of iOS
+                // devices writing a new TCN to us whenever we rotate the TCN (every 20 sec).
+                // iOS devices use the last 4 bytes to identify the Android devices and write
+                // only once a TCN to them.
+//                    tcnAdvertisingQueue.first()+generatedTcn.sliceArray(0..3)
+//                )
                 .build()
 
             advertiser.startAdvertising(settings, data, advertisingCallback)
@@ -632,12 +712,15 @@ class TcnBluetoothManager(
                                 "Did find TCN=${Base64.encodeToString(
                                     value,
                                     Base64.NO_WRAP
-                                )} from device=${device?.address} at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[device?.address]}"
+                                )} from device=${device?.address} at estimated distance=${estimatedDistanceToRemoteDeviceAddressMap[device?.address]} with device model code: ${deviceModelCodeMap[device?.address]}"
                             )
-                            tcnCallback.onTcnFound(
-                                value,
-                                estimatedDistanceToRemoteDeviceAddressMap[device?.address]
-                            )
+                            deviceModelCodeMap[device?.address]?.let {
+                                tcnCallback.onTcnFound(
+                                    value,
+                                    estimatedDistanceToRemoteDeviceAddressMap[device?.address],
+                                    it
+                                )
+                            }
                             // TCNs received through characteristic writes come from iOS apps in the
                             // background.
                             // We act as a bridge and advertise these TCNs so iOS apps can discover

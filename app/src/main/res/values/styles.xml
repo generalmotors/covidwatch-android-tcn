@@ -1,6 +1,7 @@
 <resources>
 
     <!-- Base application theme. -->
+
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -8,7 +9,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:fontFamily">@font/montserrat</item>
         <item name="android:textColor">@color/white</item>
-        <item name="android:windowBackground">@drawable/safeatworkbk</item>
+        <item name="android:windowBackground">@drawable/ct_bk</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
@@ -41,7 +42,7 @@
         <item name="android:textColor">@color/white</item>
     </style>
 
-    <style name="main_card_layout">
+    <style name="ct_main_card_layout">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">#e2333333</item>
@@ -50,7 +51,7 @@
         <item name="android:paddingBottom">20dp</item>
     </style>
 
-    <style name="main_page_header">
+    <style name="ct_page_header">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
@@ -61,7 +62,7 @@
         <item name="android:fontFamily">sans-serif-black</item>
     </style>
 
-    <style name="regular_text">
+    <style name="ct_regular_text">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
@@ -71,7 +72,7 @@
         <item name="android:textAppearance">@style/TextAppearance.AppCompat.Display1</item>
     </style>
 
-    <style name="main_button">
+    <style name="ct_button">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">56dp</item>
         <item name="android:layout_marginTop">16dp</item>
@@ -86,7 +87,7 @@
 
     </style>
 
-    <style name="main_regular_input">
+    <style name="ct_regular_input">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">34dp</item>
         <item name="android:layout_marginTop">16dp</item>
@@ -99,7 +100,7 @@
         <item name="android:textColor">#000000</item>
     </style>
 
-    <style name="main_button_red">
+    <style name="ct_button_red">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">16dp</item>
@@ -121,7 +122,7 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="big_italic_text">
+    <style name="ct_big_italic_text">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
@@ -131,7 +132,7 @@
         <item name="android:textAppearance">@style/TextAppearance.AppCompat.Display1</item>
     </style>
 
-    <style name="common_divider_1">
+    <style name="ct_divider_1">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">2dp</item>
         <item name="android:layout_marginTop">8dp</item>
@@ -139,5 +140,9 @@
         <item name="android:layout_marginRight">32dp</item>
         <item name="android:background">@color/white</item>
     </style>
+    <style name="Dialog" parent="Theme.AppCompat.Dialog">
+        <item name="android:windowNoTitle">false</item>
+        <item name="android:windowIsFloating">true</item>
 
+    </style>
 </resources>

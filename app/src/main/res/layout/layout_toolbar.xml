@@ -19,10 +19,6 @@
         android:layout_height="wrap_content"
         android:layout_weight="1" />
 
-    <ImageView
-        android:layout_width="220dp"
-        android:layout_height="42dp"
-        app:srcCompat="@drawable/logo_placeholder" />
 
     <View
         android:layout_width="0dp"

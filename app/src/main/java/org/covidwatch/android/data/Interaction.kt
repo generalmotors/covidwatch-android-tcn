@@ -39,4 +39,10 @@ class Interaction {
 
     @ColumnInfo(name = "is_notified")
     var isNotified: Boolean = false
+
+    @ColumnInfo(name = "detected_phone_model")
+    var detectedPhoneModel: String = "Unknown"
+
+    @ColumnInfo(name = "interaction_specific_distance")
+    var interactionSpecificDistance: Int? = null
 }

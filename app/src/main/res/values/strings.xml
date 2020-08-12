@@ -121,7 +121,7 @@
     <string name="refer_to_local_agencies">Refer to local agencies for medical advice</string>
     <string name="string_interactions">Interactions</string>
     <string name="interactions_list">Interactions List</string>
-    <string name="safe_at_work">Contact Tracing</string>
+    <string name="ct_name">Contact Tracing</string>
     <string name="pre_check">PRE-CHECK</string>
     <string name="you_reported_sick">You\'ve reported sick</string>
     <string name="safe_text">SAFE</string>
@@ -140,5 +140,7 @@
     <string name="tst_conf_continue">Please continue to use this app.</string>
     <string name="im_covid_free">I\'M COVID-19 FREE!</string>
     <string name="footer_quote_text">multi style text - to be set in fragment</string>
+    <string name="send_calibration_data">Send Calibration Data</string>
+    <string name="no_device_detected">No people detected nearby</string>
 
 </resources>

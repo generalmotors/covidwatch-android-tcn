@@ -18,7 +18,6 @@ class CovidWatchApplication : Application() {
     private val signedReportsDownloader: SignedReportsDownloader by inject()
 
 
-//    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate() {
         super.onCreate()
         NotificationUtils.init(applicationContext!!)

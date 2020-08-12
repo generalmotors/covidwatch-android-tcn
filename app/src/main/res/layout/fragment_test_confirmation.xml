@@ -23,20 +23,20 @@
 
         <TextView
             android:id="@+id/home_title_1"
-            style="@style/main_page_header"
+            style="@style/ct_page_header"
             android:fontFamily="@font/gm_global_sans_black"
             android:paddingHorizontal="32dp"
-            android:text="@string/safe_at_work" />
+            android:text="@string/ct_name" />
 
 
         <LinearLayout
-            style="@style/main_card_layout"
+            style="@style/ct_main_card_layout"
             android:layout_marginTop="64dp">
 
 
             <TextView
                 android:id="@+id/tst_conf_desc_1"
-                style="@style/big_italic_text"
+                style="@style/ct_big_italic_text"
                 android:layout_marginTop="0dp"
                 android:layout_marginBottom="-25dp"
                 android:fontFamily="@font/gm_global_sans_light_italic"
@@ -44,7 +44,7 @@
 
             <TextView
                 android:id="@+id/home_desc_2"
-                style="@style/regular_text"
+                style="@style/ct_regular_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="28dp"
@@ -54,7 +54,7 @@
 
             <Button
                 android:id="@+id/continue_using_button"
-                style="@style/main_button"
+                style="@style/ct_button"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
                 android:layout_marginBottom="20dp"

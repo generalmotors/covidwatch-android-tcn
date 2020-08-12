@@ -139,6 +139,10 @@ dependencies {
     implementation "org.koin:koin-android:$koin_version"
     implementation "org.koin:koin-androidx-viewmodel:$koin_version"
 
+    implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
+    implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava2:2.6.1'
+
     //// TEST RELATED DEPENDENCIES
 
     // Junit5 for Unit Tests
@@ -176,6 +180,7 @@ dependencies {
     implementation "androidx.security:security-crypto:$security_version"
 
 }
+
 
 /*
 sonarqube {

@@ -11,10 +11,9 @@ class MenuAdapter(
 
     private val items = listOf(
         MenuItem(R.string.settings, 0, Settings),
-        //MenuItem(R.string.test_results, 0, TestResults),
-        MenuItem(R.string.terms_of_use, R.drawable.ic_exit_to_app, Browser("<TO_BE_PROVIDED>")),
-        MenuItem(R.string.privacy_policy, R.drawable.ic_exit_to_app, Browser("<TO_BE_PROVIDED>")),
-        MenuItem(R.string.debug_info, R.drawable.ic_info_red, DebugInfo)
+        MenuItem(R.string.terms_of_use, R.drawable.ic_exit_to_app, Browser("https://www.your_privacy_url.com/")),
+        MenuItem(R.string.privacy_policy, R.drawable.ic_exit_to_app, Browser("https://www.your_privacy_url.com/"))
+       // MenuItem(R.string.debug_info, R.drawable.ic_info_red, DebugInfo)
     )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MenuItemViewHolder {

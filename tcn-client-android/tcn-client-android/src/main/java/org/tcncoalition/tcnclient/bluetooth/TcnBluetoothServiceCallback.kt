@@ -9,5 +9,5 @@ interface TcnBluetoothServiceCallback {
     fun generateTcn(): ByteArray
 
     /** Callback whenever the service finds a TCN. */
-    fun onTcnFound(tcn: ByteArray, estimatedDistance: Double? = null)
+    fun onTcnFound(tcn: ByteArray, estimatedDistance: Double? = null, detectedDeviceModelCode : Int)
 }

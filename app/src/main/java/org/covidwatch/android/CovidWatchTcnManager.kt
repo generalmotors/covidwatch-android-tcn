@@ -1,5 +1,6 @@
 package org.covidwatch.android
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -19,15 +20,18 @@ import org.covidwatch.android.data.TemporaryContactNumberDAO
 import org.covidwatch.android.data.signedreport.SignedReport
 import org.covidwatch.android.data.signedreport.SignedReportDAO
 import org.covidwatch.android.presentation.MainActivity
+import org.covidwatch.android.service.ContactTracerStreams
 import org.covidwatch.android.util.NotificationUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-
+import org.json.JSONObject
+import org.tcncoalition.tcnclient.TcnConstants
 import org.tcncoalition.tcnclient.TcnKeys
 import org.tcncoalition.tcnclient.TcnManager
 import org.tcncoalition.tcnclient.crypto.MemoType
-import java.text.SimpleDateFormat
+import java.lang.Exception
+import java.time.LocalDateTime
 import java.util.*
 
 
@@ -36,10 +40,14 @@ class CovidWatchTcnManager(
     private val tcnKeys: TcnKeys,
     private val tcnDao: TemporaryContactNumberDAO,
     private val signedReportDAO: SignedReportDAO,
-    private val interactionDAO: InteractionDAO
+    private val interactionDAO: InteractionDAO,
+    private var foundDeviceModelMap: MutableMap<Int,Any> = mutableMapOf()
+
 ) : TcnManager(context) {
     private var _interactionsBeingLogged: Boolean = false
     private val advertisedTcns = mutableListOf<ByteArray>()
+    private val TAG = this::class.qualifiedName
+    var detectedPhoneModel = "Unknown"
 
     init {
         val handler = Handler()
@@ -62,7 +70,7 @@ class CovidWatchTcnManager(
                         interactionDAO.deleteOldInteractions(intrDelDate)
                         interactionDAO.closeOldInteraction(intrEndDate, currentDate)
                     }
-                    Log.d("CWTMgr_Handler", "Database Cleaned Up @ " + currentDate.toString())
+                    Log.d("CWTMgr_Handler", "Database Cleaned Up @ $currentDate")
                 }
 
                 handler.postDelayed(this, 20000)
@@ -104,10 +112,36 @@ class CovidWatchTcnManager(
         return tcn
     }
 
-    override fun onTcnFound(tcn: ByteArray, estimatedDistance: Double?) {
+    override fun onTcnFound(tcn: ByteArray, estimatedDistance: Double?, detectedDeviceModelCode : Int) {
+        val interactionSpecificDistance : Int? = null
         if (advertisedTcns.contains(tcn)) return
-        logTcn(tcn, estimatedDistance)
-        logInteraction(tcn, estimatedDistance)
+        completeInteraction(tcn, estimatedDistance, detectedDeviceModelCode, interactionSpecificDistance)
+    }
+
+    private fun completeInteraction(tcn: ByteArray, estimatedDistance: Double?, detectedDeviceModelCode: Int, interactionSpecificDistance: Int?) {
+        var interactionDistance = interactionSpecificDistance
+        val detectedDeviceModel = determineDeviceModel(detectedDeviceModelCode)
+        try {
+            interactionDistance = GlobalConstants.deviceDistanceProfile?.get(detectedDeviceModelCode.toString()).toString().toInt()
+            logInteraction(tcn, estimatedDistance, interactionDistance, detectedDeviceModel)
+            logTcn(tcn, estimatedDistance)
+        } catch (error : Exception) {
+            logInteraction(tcn, estimatedDistance, interactionDistance, detectedDeviceModel)
+            logTcn(tcn, estimatedDistance)
+        }
+    }
+
+    private fun determineDeviceModel(detectedDeviceModelCode: Int) : String {
+        val iterator: Iterator<*> = TcnConstants.PHONE_MODELS.keys().iterator()
+        while (iterator.hasNext()) {
+            val key = iterator.next() as String
+            if (TcnConstants.PHONE_MODELS.get(key).toString()
+                    .toInt() == detectedDeviceModelCode
+            ) {
+                return key
+            }
+        }
+        return "Unknown"
     }
 
     /**
@@ -145,15 +179,6 @@ class CovidWatchTcnManager(
         )
     }
 
-    fun getDeviceModel() : String {
-        var manufacturer = Build.MANUFACTURER
-        var model = Build.MODEL
-        if (model.startsWith(manufacturer)) {
-            return model
-        }
-            return "$manufacturer $model"
-    }
-
     fun generateAndUploadReport() {
         // Create a new Signed Report with `uploadState` set to `.notUploaded` and store it in the local persistent store.
         // This will kick off an observer that watches for signed reports which were not uploaded and will upload it.
@@ -186,9 +211,14 @@ class CovidWatchTcnManager(
         }
     }
 
-    private fun logInteraction(tcnBytes: ByteArray, estimatedDistance: Double?) {
-
-        if (estimatedDistance == null || estimatedDistance > GlobalConstants.INTERACTION_MIN_DISTANCE_IN_FEET) {
+    private fun logInteraction(
+        tcnBytes: ByteArray,
+        estimatedDistance: Double?,
+        interactionSpecificDistance: Int?,
+        detectedPhoneModel: String
+    ) {
+        Log.i(TAG, "Interaction specific min contact distance being used $interactionSpecificDistance")
+        if (estimatedDistance == null || estimatedDistance > interactionSpecificDistance ?: GlobalConstants.INTERACTION_MIN_DISTANCE_IN_FEET) {
             return
         }
 
@@ -212,8 +242,10 @@ class CovidWatchTcnManager(
             val interactionList = interactionDAO.findLastOpenInteractionsByID(tcnBytes)
             val interaction: Interaction
             val distHistoryList: ArrayList<Double> = ArrayList()
-            if (interactionList.size > 0) {    // new interaction
+            if (interactionList.isNotEmpty()) {    // new interaction
                 interaction = interactionList[0]
+                interaction.detectedPhoneModel = detectedPhoneModel
+                interaction.interactionSpecificDistance = interactionSpecificDistance
                 val strH = interaction.distanceHistory.split(",")
                 for (i in 0..strH.size - 1) {
                     // strH[i].toDoubleOrNull()?.let { distHistoryList.add("%.2f".format(it).toDouble()) }
@@ -221,7 +253,8 @@ class CovidWatchTcnManager(
                 }
             } else {
                 interaction = Interaction()
-                //interaction.deviceId = deviceId
+                interaction.detectedPhoneModel = detectedPhoneModel
+                interaction.interactionSpecificDistance = interactionSpecificDistance
                 interaction.bytes = tcnBytes
                 interaction.interactionStart = currentDate
                 interaction.interactionEnd = intrDelDate
@@ -234,18 +267,8 @@ class CovidWatchTcnManager(
 
             if (!interaction.isNotified && Date().time - snoozeActivated.time > GlobalConstants.SNOOZE_TIME_IN_SECONDS * 1000) {
                 if (currentDate.time - interaction.interactionStart.time >= GlobalConstants.INTERACTION_NOTIFY_WAIT_DURATION_IN_SECONDS * 1000) {
-                    val sdf = SimpleDateFormat("hh:mm:ssaa")
                     NotificationUtils.sendNotificationTooClose(estimatedDistance)
                     interaction.isNotified = true
-//                    if (toastInfo) {
-//                        Toast.makeText(
-//                            context,
-//                            "Interaction started at ${sdf.format(interaction.interactionStart.time)}, ended at ${sdf.format(
-//                                interaction.interactionEnd.time
-//                            )}, and was ${(interaction.interactionEnd.time - interaction.interactionStart.time) / 1000} seconds long",
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                    }
                 }
             }
 
