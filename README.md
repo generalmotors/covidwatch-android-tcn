@@ -2,8 +2,6 @@
 
 # Contact Tracing App Android 
 
-## Who are we? What is this app?
-
 This document is focused on the implementation of the Android version of the Contact Tracing app. This app uses the CovidWatch base for which more information can be found at [CovidWatch Android](https://github.com/covidwatchorg/covidwatch-android-tcn)  When installed, the Contact Tracing App provides the follow capabilities:
 
 - Allows users to record contact interactions locally (Contact Definition: Less than 6ft for a period of 10+ minutes) with others using the [TCN Protocol](https://github.com/TCNCoalition/tcn-client-android)
