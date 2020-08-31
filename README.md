@@ -47,7 +47,7 @@ Update the API URL in the following files to the url of your [Contact Tracing Se
 - org.tcncoalition.tcnclient.TcnConstants
 - com.contacttracer.GlobalConstants
 
- For full app functionality, both the [Contact Tracing Services](https://github.com/generalmotors/contact-tracing-mobile-app-backend) as well as the Firebase functions referenced [commit](https://github.com/covidwatchorg/covidwatch-cloud-functions/commit/5fc89bee2e15433f55b4e2c8036f2ce13c23d2a3) need to be configured and running.
+For full app functionality, both the [Contact Tracing Services](https://github.com/generalmotors/contact-tracing-mobile-app-backend) as well as the Firebase functions referenced [commit](https://github.com/covidwatchorg/covidwatch-cloud-functions/commit/5fc89bee2e15433f55b4e2c8036f2ce13c23d2a3) need to be configured and running.
 
 ## iBeacon TCN Retrieval
 
